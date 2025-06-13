@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Password Manager</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+
+    body {
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+      background: #121212;
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 20px;
+      background-image:
+        radial-gradient(circle at 20% 30%, #ff69b4 15%, transparent 40%),
+        radial-gradient(circle at 70% 70%, #00bfff 20%, transparent 50%);
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    .container {
+      background: rgba(18,18,18,0.85);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(255,105,180,0.25);
+      max-width: 400px;
+      width: 100%;
+      padding: 30px 25px 40px;
+      position: relative;
+    }
+
+    h1 {
+      font-weight: 600;
+      font-size: 2rem;
+      margin-bottom: 25px;
+      text-align: center;
+      color: #ff69b4;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 8px #ff69b4bb;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      padding: 12px 18px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      margin: 0 8px 15px 0;
+      color: #121212;
+      background: linear-gradient(45deg, #00bfff, #ff69b4);
+      box-shadow: 0 4px 12px #ff69b4aa;
+      transition: all 0.3s ease;
+      flex: 1;
+      min-width: 100px;
+    }
+
+    button:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 6px 16px #ff69b4dd;
+    }
+
+    #buttons {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    #siteList ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    #siteList li {
+      background: #222;
+      margin: 8px 0;
+      padding: 10px 14px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 3px 8px #ff69b488;
+      font-weight: 500;
+      font-size: 1rem;
+    }
+
+    .deleteBtn {
+      background: #ff69b4;
+      color: #121212;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-weight: 700;
+      box-shadow: 0 2px 6px #ff69b4bb;
+      transition: background 0.25s ease;
+    }
+
+    .deleteBtn:hover {
+      background: #e55a9a;
+      box-shadow: 0 3px 10px #e55a9acc;
+    }
+
+    .strength {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 15px;
+      text-align: center;
+      color: #00bfff;
+      text-shadow: 0 0 6px #00bfffaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Password Manager</h1>
+
+    <div id="buttons">
+      <button id="addBtn">Add Password</button>
+      <button id="retrieveBtn">Retrieve Password</button>
+      <button id="listBtn">List All Sites</button>
+    </div>
+
+    <div id="strengthIndicator" class="strength"></div>
+    <div id="siteList"></div>
+  </div>
+
+  <script>
+    function checkStrength(password) {
+      let strength = 0;
+      if (password.length >= 8) strength++;
+      if (/[A-Z]/.test(password)) strength++;
+      if (/[0-9]/.test(password)) strength++;
+      if (/[^A-Za-z0-9]/.test(password)) strength++;
+      switch (strength) {
+        case 0:
+        case 1:
+          return 'Weak';
+        case 2:
+          return 'Moderate';
+        case 3:
+          return 'Strong';
+        case 4:
+          return 'Very Strong';
+      }
+    }
+
+    document.getElementById('addBtn').onclick = function() {
+      let site = prompt('Enter the website name:');
+      if (!site) return alert('Site name is required.');
+
+      let password = prompt('Enter the password for ' + site + ':');
+      if (!password) return alert('Password is required.');
+
+      let strengthText = checkStrength(password);
+      document.getElementById('strengthIndicator').textContent = 'Password Strength: ' + strengthText;
+
+      let passwords = JSON.parse(localStorage.getItem('passwords') || '{}');
+      passwords[site] = password;
+      localStorage.setItem('passwords', JSON.stringify(passwords));
+
+      alert('Password saved for ' + site + ' (' + strengthText + ')');
+      document.getElementById('strengthIndicator').textContent = '';
+      updateSiteList();
+    };
+
+    document.getElementById('retrieveBtn').onclick = function() {
+      let site = prompt('Enter the website name to retrieve the password:');
+      if (!site) return alert('Site name is required.');
+
+      let passwords = JSON.parse(localStorage.getItem('passwords') || '{}');
+
+      if (passwords[site]) {
+        alert('Password for ' + site + ': ' + passwords[site]);
+      } else {
+        alert('No password found for ' + site);
+      }
+    };
+
+    document.getElementById('listBtn').onclick = function() {
+      updateSiteList();
+    };
+
+    function updateSiteList() {
+      let passwords = JSON.parse(localStorage.getItem('passwords') || '{}');
+      let sites = Object.keys(passwords);
+      let siteListDiv = document.getElementById('siteList');
+      if (sites.length === 0) {
+        siteListDiv.innerHTML = '<p>No sites saved yet.</p>';
+      } else {
+        siteListDiv.innerHTML = '<ul>' + sites.map(site =>
+          '<li>' + site + 
+          ' <button class="deleteBtn" onclick="deleteSite(\'' + site + '\')">Delete</button></li>'
+        ).join('') + '</ul>';
+      }
+    }
+
+    function deleteSite(site) {
+      if (!confirm('Delete password for ' + site + '?')) return;
+      let passwords = JSON.parse(localStorage.getItem('passwords') || '{}');
+      delete passwords[site];
+      localStorage.setItem('passwords', JSON.stringify(passwords));
+      updateSiteList();
+    }
+
+    window.deleteSite = deleteSite;
+
+    updateSiteList();
+  </script>
+</body>
+</html>
